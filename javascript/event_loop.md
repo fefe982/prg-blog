@@ -10,27 +10,25 @@ Javascript 基于 Event Loop 的运行方式与众不同，microtask queue、tas
 
 它定义了 Job 与 Job queue ，并有一个顶层的 [RunJobs] 操作：
 
-```nohighlight
-1. Perform ? InitializeHostDefinedRealm().
-2. In an implementation-dependent manner, obtain the ECMAScript source texts (see clause 10) and any associated host-defined values for zero or more ECMAScript scripts and/or ECMAScript modules. For each such sourceText and hostDefined, do
-   a. If sourceText is the source code of a script, then
-      i. Perform EnqueueJob("ScriptJobs", ScriptEvaluationJob, « sourceText, hostDefined »).
-   b. Else sourceText is the source code of a module,
-      ii. Perform EnqueueJob("ScriptJobs", TopLevelModuleEvaluationJob, « sourceText, hostDefined »).
-3. Repeat,
-   a. Suspend the running execution context and remove it from the execution context stack.
-   b. Assert: The execution context stack is now empty.
-   c. Let nextQueue be a non-empty Job Queue chosen in an implementation-defined manner. If all Job Queues are empty, the result is implementation-defined.
-   d. Let nextPending be the PendingJob record at the front of nextQueue. Remove that record from nextQueue.
-   e. Let newContext be a new execution context.
-   f. Set newContext's Function to null.
-   g. Set newContext's Realm to nextPending.[[Realm]].
-   h. Set newContext's ScriptOrModule to nextPending.[[ScriptOrModule]].
-   i. Push newContext onto the execution context stack; newContext is now the running execution context.
-   j. Perform any implementation or host environment defined job initialization using nextPending.
-   k. Let result be the result of performing the abstract operation named by nextPending.[[Job]] using the elements of nextPending.[[Arguments]] as its arguments.
-   l. If result is an abrupt completion, perform HostReportErrors(« result.[[Value]] »).
-```
+> 1. Perform ? InitializeHostDefinedRealm().
+> 2. In an implementation-dependent manner, obtain the ECMAScript source texts (see clause 10) and any associated host-defined values for zero or more ECMAScript scripts and/or ECMAScript modules. For each such sourceText and hostDefined, do
+>    1. If sourceText is the source code of a script, then
+>       i. Perform EnqueueJob("ScriptJobs", ScriptEvaluationJob, « sourceText, hostDefined »).
+>    2. Else sourceText is the source code of a module,
+>       ii. Perform EnqueueJob("ScriptJobs", TopLevelModuleEvaluationJob, « sourceText, hostDefined »).
+> 3. Repeat,
+>    1. Suspend the running execution context and remove it from the execution context stack.
+>    2. Assert: The execution context stack is now empty.
+>    3. Let nextQueue be a non-empty Job Queue chosen in an implementation-defined manner. If all Job Queues are empty, the result is implementation-defined.
+>    4. Let nextPending be the PendingJob record at the front of nextQueue. Remove that record from nextQueue.
+>    5. Let newContext be a new execution context.
+>    6. Set newContext's Function to null.
+>    7. Set newContext's Realm to nextPending.[[Realm]].
+>    8. Set newContext's ScriptOrModule to nextPending.[[ScriptOrModule]].
+>    9. Push newContext onto the execution context stack; newContext is now the running execution context.
+>    10. Perform any implementation or host environment defined job initialization using nextPending.
+>    11. Let result be the result of performing the abstract operation named by nextPending.[[Job]] using the elements of nextPending.[[Arguments]] as its arguments.
+>    12. If result is an abrupt completion, perform HostReportErrors(« result.[[Value]] »).
 
 这里，首先根据脚本的类型，将 [ScriptEvaluationJob](https://www.ecma-international.org/ecma-262/#sec-scriptevaluationjob) 或 [TopLevelModuleEvaluationJob](https://www.ecma-international.org/ecma-262/#sec-toplevelmoduleevaluationjob) 加入 `ScriptJob` 队列。然后开始循环处理每一个非空 Job queue 。
 
@@ -44,60 +42,35 @@ Javascript 基于 Event Loop 的运行方式与众不同，microtask queue、tas
 
 HTML 的 Event Loop 执行如下的[操作](https://html.spec.whatwg.org/multipage/webappapis.html#event-loop-processing-model)：
 
-```
-1. Let taskQueue be one of the event loop's task queues, chosen in a user-agent-defined manner, with the constraint that the chosen task queue must contain at least one runnable task. If there is no such task queue, then jump to the microtasks step below.
-
-2. Let oldestTask be the first runnable task in taskQueue, and remove it from taskQueue.
-
-3. Report the duration of time during which the user agent does not execute this loop by performing the following steps:
-
-   1. Set event loop begin to the current high resolution time.
-
-   2. If event loop end is set, then let top-level browsing contexts be the set of all top-level browsing contexts of all Document objects associated with the event loop. Report long tasks, passing in event loop end, event loop begin, and top-level browsing contexts.
-
-4. Set the event loop's currently running task to oldestTask.
-
-5. Perform oldestTask's steps.
-
-6. Set the event loop's currently running task back to null.
-
-7. Remove oldestTask from its task queue.
-
-8. Microtasks: Perform a microtask checkpoint.
-
-9. Let now be the current high resolution time. [HRT]
-
-10. Report the task's duration by performing the following steps:
-
-   ...
-11. 以下省略
-```
+> 1. Let taskQueue be one of the event loop's task queues, chosen in a user-agent-defined manner, with the constraint that the chosen task queue must contain at least one runnable task. If there is no such task queue, then jump to the microtasks step below.
+> 2. Let oldestTask be the first runnable task in taskQueue, and remove it from taskQueue.
+> 3. Report the duration of time during which the user agent does not execute this  loop by performing the following steps:
+>    1. Set event loop begin to the current high resolution time.
+>    2. If event loop end is set, then let top-level browsing contexts be the set of all top-level browsing contexts of all Document objects associated with the event loop. Report long tasks, passing in event loop end, event loop begin, and top-level browsing contexts.
+> 4. Set the event loop's currently running task to oldestTask.
+> 5. Perform oldestTask's steps.
+> 6. Set the event loop's currently running task back to null.
+> 7. Remove oldestTask from its task queue.
+> 8. Microtasks: Perform a microtask checkpoint.
+> 9. Let now be the current high resolution time. [HRT]
+> 10. Report the task's duration by performing the following steps:
+>     1. ...
+> 11. 以下省略
 
 注意，microtask queue 不是 task queue。task queue 不是队列，因为它不是先进先出的。从第一步可以看出从 task queue 中取出的任务并不一定是最先进入 task queue 的任务。
 
 在 Event Loop 中，完成一个 task queue 的任务之后，会[Perform a microtask checkpoint](https://html.spec.whatwg.org/multipage/webappapis.html#perform-a-microtask-checkpoint) :
 
-```nohighlight
-1. If the event loop's performing a microtask checkpoint is true, then return.
-
-2. Set the event loop's performing a microtask checkpoint to true.
-
-3. While the event loop's microtask queue is not empty:
-
-   1. Let oldestMicrotask be the result of dequeuing from the event loop's microtask queue.
-
-   2. Set the event loop's currently running task to oldestMicrotask.
-
-   3. Run oldestMicrotask.
-
-   4. Set the event loop's currently running task back to null.
-
-4. For each environment settings object whose responsible event loop is this event loop, notify about rejected promises on that environment settings object.
-
-5. Cleanup Indexed Database transactions.
-
-6. Set the event loop's performing a microtask checkpoint to false.
-```
+> 1. If the event loop's performing a microtask checkpoint is true, then return.
+> 2. Set the event loop's performing a microtask checkpoint to true.
+> 3. While the event loop's microtask queue is not empty:
+>    1. Let oldestMicrotask be the result of dequeuing from the event loop's > microtask queue.
+>    2. Set the event loop's currently running task to oldestMicrotask.
+>    3. Run oldestMicrotask.
+>    4. Set the event loop's currently running task back to null.
+> 4. For each environment settings object whose responsible event loop is this event loop, notify about rejected promises on that environment settings object.
+> 5. Cleanup Indexed Database transactions.
+> 6. Set the event loop's performing a microtask checkpoint to false.
 
 在这里，将会按照先进先出的顺序，执行所有 microtask queue 中的任务（包括在此过程中新进入 microtask queue 的任务）， 直到 microtask queue 为空。
 
