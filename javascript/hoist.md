@@ -41,29 +41,25 @@ x = 1;
 
 在 ECMA 262 里，对 [ScriptEvaluationJob](https://www.ecma-international.org/ecma-262/#sec-scriptevaluationjob) 如瑞啊的描述：
 
-```nohighlight
 1. Assert: sourceText is an ECMAScript source text (see clause 10).
 2. Let realm be the current Realm Record.
 3. Let s be ParseScript(sourceText, realm, hostDefined).
 4. If s is a List of errors, then
-   a. Perform HostReportErrors(s).
-   b. Return NormalCompletion(undefined).
+   1. Perform HostReportErrors(s).
+   2. Return NormalCompletion(undefined).
 5. Return ? ScriptEvaluation(s).
-```
 
 对 Module 来说，有 [TopLevelModuleEvaluationJob](https://www.ecma-international.org/ecma-262/#sec-toplevelmoduleevaluationjob):
 
-```nohighlight
 1. Assert: sourceText is an ECMAScript source text (see clause 10).
 2. Let realm be the current Realm Record.
 3. Let m be ParseModule(sourceText, realm, hostDefined).
 4. If m is a List of errors, then
-   a. Perform HostReportErrors(m).
-   b. Return NormalCompletion(undefined).
+   1. Perform HostReportErrors(m).
+   2. Return NormalCompletion(undefined).
 5. Perform ? m.Instantiate().
 6. Assert: All dependencies of m have been transitively resolved and m is ready for evaluation.
 7. Return ? m.Evaluate().
-```
 
 可以看到，Javascirpt 虽然是解释性执行的语言，但是它并不是边读取边解释边执行，而是一定要把整个脚本加载并解析完成（通过 `ParseScript` 或 `ParseModule`）之后，才开始执行。这样，在脚本开始执行的时候，就可以知道所有的变量与函数的声明的信息，即使还没有执行到变量或函数声明的地点。这就使得在 Javascript 里引用“还没有声明”的函数和变量成为可能。
 
@@ -77,7 +73,7 @@ x = 1;
 
 *Script* 全局的 **VarScopedDeclarations** 将收集：
 
-1. `var` 声明的变量。包括 `for(var ...)`、`for await (var ...)` 中用 var 声明的变量。同时，在各种控制结构内部，以及 Block 内部的都会被一起收集。这一过程实在运行之前执行的，所以声明是否会提升与代码是否会被执行无关。如 `if` 等控制语句中，违背执行的代码中定义的变量也会被提升。但是，函数定义内部的 `var` 定义不会被收集，也就是说函数内部的 `var` 定义不会被提升至函数外。
+1. `var` 声明的变量。包括 `for(var ...)`、`for await (var ...)` 中用 var 声明的变量。同时，在各种控制结构内部，以及 Block 内部的都会被一起收集。这一过程实在运行之前执行的，所以声明是否会提升与代码是否会被执行无关。如 `if` 等控制语句中，未被执行的代码中定义的变量也会被提升。但是，函数定义内部的 `var` 定义不会被收集，也就是说函数内部的 `var` 定义不会被提升至函数外。
 2. 顶级的函数声明。位于块内部，以及各种控制结构内部的函数声明不会被收集，也不会被提升。
 
 说点细节的话，*Script* 的 **VarScopedDeclarations** 直接使用了其中的 *StatementList* 的 **TopLevelVarScopedDeclarations** 。*StatementList* 可以包含 *Statement* 与 *Declaration* 。*StatementList* 的 **TopLevelVarScopedDeclarations** 收集了 *Statement* 的 **VarScopedDeclarations** 与 *Declaration* 中的函数声明。
@@ -92,7 +88,7 @@ x = 1;
 
 #### 函数中
 
-函数中的情形与 *Script* 类似。只不过它不通过 *Script* ，而是使用 *FunctionBody* 的 **VarScopedDeclarations** 来收集需要提升的定义。
+函数中的情形与 *Script* 类似。只不过它不通过 *Script* ，而是使用 *FunctionBody* 的 **VarScopedDeclarations** 来收集需要提升的定义，并在 [FunctionDeclarationInstantiation](https://www.ecma-international.org/ecma-262/#sec-functiondeclarationinstantiation) 里注册到运行环境中。
 
 但是，函数中的 var 变量定义并不保存在对象里。且 `var` 与 函数参数可以认为是出来同一个环境中的，所以，对于与函数参数同名的 `var` 变量，它的初始值将是函数的参数值，其它依然为 `undefined` 。
 
