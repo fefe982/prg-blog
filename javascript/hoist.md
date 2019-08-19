@@ -41,25 +41,25 @@ x = 1;
 
 在 ECMA 262 里，对 [ScriptEvaluationJob](https://www.ecma-international.org/ecma-262/#sec-scriptevaluationjob) 如瑞啊的描述：
 
-1. Assert: sourceText is an ECMAScript source text (see clause 10).
-2. Let realm be the current Realm Record.
-3. Let s be ParseScript(sourceText, realm, hostDefined).
-4. If s is a List of errors, then
-   1. Perform HostReportErrors(s).
-   2. Return NormalCompletion(undefined).
-5. Return ? ScriptEvaluation(s).
+> 1. Assert: sourceText is an ECMAScript source text (see clause 10).
+> 2. Let realm be the current Realm Record.
+> 3. Let s be ParseScript(sourceText, realm, hostDefined).
+> 4. If s is a List of errors, then
+>    1. Perform HostReportErrors(s).
+>    2. Return NormalCompletion(undefined).
+> 5. Return ? ScriptEvaluation(s).
 
 对 Module 来说，有 [TopLevelModuleEvaluationJob](https://www.ecma-international.org/ecma-262/#sec-toplevelmoduleevaluationjob):
 
-1. Assert: sourceText is an ECMAScript source text (see clause 10).
-2. Let realm be the current Realm Record.
-3. Let m be ParseModule(sourceText, realm, hostDefined).
-4. If m is a List of errors, then
-   1. Perform HostReportErrors(m).
-   2. Return NormalCompletion(undefined).
-5. Perform ? m.Instantiate().
-6. Assert: All dependencies of m have been transitively resolved and m is ready for evaluation.
-7. Return ? m.Evaluate().
+> 1. Assert: sourceText is an ECMAScript source text (see clause 10).
+> 2. Let realm be the current Realm Record.
+> 3. Let m be ParseModule(sourceText, realm, hostDefined).
+> 4. If m is a List of errors, then
+>    1. Perform HostReportErrors(m).
+>    2. Return NormalCompletion(undefined).
+> 5. Perform ? m.Instantiate().
+> 6. Assert: All dependencies of m have been transitively resolved and m is ready for evaluation.
+> 7. Return ? m.Evaluate().
 
 可以看到，Javascirpt 虽然是解释性执行的语言，但是它并不是边读取边解释边执行，而是一定要把整个脚本加载并解析完成（通过 `ParseScript` 或 `ParseModule`）之后，才开始执行。这样，在脚本开始执行的时候，就可以知道所有的变量与函数的声明的信息，即使还没有执行到变量或函数声明的地点。这就使得在 Javascript 里引用“还没有声明”的函数和变量成为可能。
 
