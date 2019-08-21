@@ -100,7 +100,7 @@ GetThisEnvironment 就是从当前的环境开始，一级一级向外找，直�
 这里有几件事情需要注意：
 
 1. 第 2 步检测了 *thisMode* ，如果为 **lexical**，不做绑定，直接返回。这实际是在检测箭头函数。当前只有箭头函数的 *thisMode* 为 **lexical**。
-2. 严格模式下，thisArgument 将直接作为 `this` 绑定。但是，在非严格模式下，`undefined` 与 `null` 会被替换为全局环境的 `this` ，一般就是全局对象；其他（基本类型）值将被转换为对象。
+2. 如果函数定义在严格模式下，thisArgument 将直接作为 `this` 绑定。但是，如果函数定义在非严格模式下，`undefined` 与 `null` 会被替换为全局环境的 `this` ，一般就是全局对象；其他（基本类型）值将被转换为对象。
 
 上面第二点，就是**没有调用对象的时候，`this` 指向全局对象**的来源。
 
@@ -144,6 +144,50 @@ GetThisEnvironment 就是从当前的环境开始，一级一级向外找，直�
 > 1. Let *tailCall* be IsInTailPosition(*thisCall*).
 > 1. Return ? EvaluateCall(*func*, *ref*, *Arguments*, *tailCall*).
 
-*ref* 是函数调用，函数名部分（函数名其实可以是一个表达式的）的计算结果。*func* 是从 *ref* 中取出的值，也就是被调用的函数。而 *ref* 不一定是一个值，可能是 Reference （这个不是大家常说的引用，而是一种 ECMA-262 内置类型）。GetValue 可以从 Reference 中取出记录的值。
+*ref* 是函数调用，函数名部分（函数其实可以是一个表达式的结果）的计算结果。*func* 是从 *ref* 中取出的值，也就是被调用的函数。而 *ref* 不一定是一个值，可能是 Reference （这个不是大家常说的引用，而是一种 ECMA-262 内置类型）。GetValue 可以从 Reference 中取出记录的值。
 
+#### Reference
 
+[Reference](https://www.ecma-international.org/ecma-262/#sec-reference-specification-type) 是一种标准内置类型。它用来表示标识符解析的结果，也就是说，在什么地方找到了某一个变量。
+
+它一般记录了以下几个信息：
+
+1. base value: 这个标识符是在哪里找到的。它可以一个 Object, 基本类型的值，或者是一个环境（Environment Record），或者是 `undefined`
+   1. 对于对象属性，base value 将是包含这个标识符的对象。对象属性访问的形式（[Property Access](https://www.ecma-international.org/ecma-262/#sec-property-accessors)，如 `A.B`， `A["B"]`，以及 `super.Property`）的结果都会是一个Reference，其中 base value 将是其中相当于对象的部分的值。(注意不会检查对象中是否真的存在这个属性)
+   2. 对于变量/常量，如局部变量，全局变量，函数参数等，或者说一个单独的 [Identifier](https://www.ecma-international.org/ecma-262/#sec-identifiers)，求值的结果是一个 Reference ，其中的 base value 将是包含这个变量的环境。查找会从标识符出现的环境开始，一层层向上找，直到全局环境。
+   3. 变量没有找到的时候，base value 为 `undefined`。（只有单独的 Identifier 没有找到是会有此结果）
+2. referenced name: 这是一个字符串。表示标识符的名字。
+3. strict: 引用表示符的地点是否处于严格模式
+
+由 super.Property 得到 Reference 比较特殊，不过它只能用于构造函数里（而且该函数不能被当成普通函数调用），我们在后续讲到构造的时候再讨论。
+
+Property Access、super.Property 和 Identifier 的求值结果是 Reference 。`(Expr)` 的求值结果与 `Expr` 一致。其它所有表达式的求值结果都不是 Reference 。
+
+#### thisValue 的规则
+
+EvaluateCall 中的 *ref* 是对函数调用里函数部分的求值结果。
+从 Reference 的介绍，以及 EvaluateCall 的算法，可以得到初始 thisValue 的设置规则：
+
+1. 如果函数名是由一个表达式计算出来的，那么 thisValue 是 `undefined` 。
+   * 比如 `(x?func1:func2)()`
+   * 此时 *ref* 不是 Reference
+1. 如果它是由 Property Access （`A.B`, `A[B]`）生成的 （IsPropertyReference(*ref*) is **true**），那么直接使用 base value 。
+   * 暂不考虑 `super.` 的情况
+   * GetThisValue(*ref*) 此时直接返回 base value ，也就是 `A`
+1. 如果函数名是一个单独的标识符，Reference 的 base value 是一个环境，那么返回这个环境的 WithBaseObject()
+   * 此值仅当标识符解析为一个 `with` 块的对象的属性时，为给 `with` 块的对象。其余均为 `undefined` 。
+
+### 小结
+
+对函数调用来说，决定 `this` 经历了以下几个过程：
+
+1. 初始值：(EvaluteCall)
+   1. 对 `A.B`，`A[B]`，为 `A`
+   1. 对 `with (obj) { property ...}` ，如果 `property` 解析为 `obj` 的属性，为 `obj`
+   1. 其余均为 `undefined`
+2. 非严格模式函数替换 `undefined` ：（OrdinaryCallBindTHis）
+   * 非严格模式函数，`undefined` 会被替换为全局环境的 `this`
+   * 此处仅检查函数定义是否在严格模式。与调用处是否严格模式无关
+3. 非箭头函数，将以上求得的值写入函数运行时环境
+
+读取 `this` 的值时，除了箭头函数，直接从当前函数的环境中读取。对于箭头函数，从包含箭头函数定义的环境中读取。（注意，不是箭头函数的调用者）（也可以认为，箭头函数在定义时，对外层的 `this` 形成了一个闭包）
