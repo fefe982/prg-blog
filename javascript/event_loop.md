@@ -64,7 +64,7 @@ HTML 的 Event Loop 执行如下的[操作](https://html.spec.whatwg.org/multipa
 > 1. If the event loop's performing a microtask checkpoint is true, then return.
 > 2. Set the event loop's performing a microtask checkpoint to true.
 > 3. While the event loop's microtask queue is not empty:
->    1. Let oldestMicrotask be the result of dequeuing from the event loop's > microtask queue.
+>    1. Let oldestMicrotask be the result of dequeuing from the event loop's microtask queue.
 >    2. Set the event loop's currently running task to oldestMicrotask.
 >    3. Run oldestMicrotask.
 >    4. Set the event loop's currently running task back to null.

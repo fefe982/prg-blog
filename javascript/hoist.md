@@ -94,9 +94,11 @@ x = 1;
 
 #### 再说函数定义的提升
 
-上面说了，`var` 是可以跨块提升的，但是函数不可以。除了顶级（全局的最外层，或函数定义的最外层）的函数意外，其他的函数声明将通过 **LexicallyScopedDeclarations** ，并在进入块的时候，通过 [BlockDeclarationInstantiation](https://www.ecma-international.org/ecma-262/#sec-blockdeclarationinstantiation) 定义在一个新建的块级作用域中。
+上面说了，`var` 是可以跨块提升的，但是函数声明不可以。除了顶级（全局的最外层，或函数定义的最外层）的函数意外，其他的函数声明将通过 **LexicallyScopedDeclarations** ，并在进入块的时候，通过 [BlockDeclarationInstantiation](https://www.ecma-international.org/ecma-262/#sec-blockdeclarationinstantiation) 定义在一个新建的块级作用域中。
 
-但是，在 ECMAScript 将块级函数标准化之前，各家浏览器就已经各自实现了块内定义的函数。这就导致大家的实现各不相同，并且持续至今。这也包括块内声明的函数是如何提升的。因而，可以在浏览器里观察到与此处描述不同的块级定义的函数的提升行为。[MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function) 有不同浏览器块内函数提升的在不同浏览器中的对比。
+注意，只有函数声明才会在相应的作用域引入一个函数对象。函数声明语句是以 `function` 关键字开始，整条语句仅声明一个函数。比如， `var func = funciton() {}` 格式的，不是函数声明，按照 `var` 的规则处理。
+
+在 ECMAScript 将块级函数标准化之前，各家浏览器就已经各自实现了块内定义的函数。这就导致大家的实现各不相同，并且持续至今。这也包括块内声明的函数是如何提升的。因而，可以在浏览器里观察到与此处描述不同的块级定义的函数的提升行为。[MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function) 有不同浏览器块内函数提升的在不同浏览器中的对比。
 
 #### `let` 与 `const`
 
@@ -119,3 +121,14 @@ x = 1;
 ```
 
 所以，在 node.js 里，无法在全局作用域写代码。因而 `var` 声明的“全局”变量，也不会进入全局对象。
+
+## 小结
+
+1. javascript 中所有变量、常量、函数声明，都是在进入相应的作用域时生成的。
+   1. 他们不是在声明语句所在的位置生成的
+2. `var` 变量的作用域是其所在的函数（或全局作用域），`let`、`const`、函数的作用域是其所在的块。
+   1. 由于历史原因，在不同浏览器中，块级函数的表现会有所不同
+3. 在变量生成的时候，`var` 变量会被初始化为 `undefined` ；`let`、`const` 不会被初始化；函数则直接被初始化为实际的函数对象。
+   1. 如果 `var` 变量与函数参数重名，则会被初始化为函数参数的值
+   2. 使用未被初始化的变量会引发运行时错误
+4. 在变量的实际声明处，`var` 变量仅执行 Initializer 的赋值（如果没有 Initializer，则什么也不做）；`let`、`const` 变量将初始化为 Initializer 的值（如没有 Initializer，初始化为 `undefined` ）；函数声明处则什么也不做
