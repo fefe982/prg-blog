@@ -46,13 +46,13 @@ Object 对象的 [getPrototypeOf](https://www.ecma-international.org/ecma-262/#s
 
 通常情况下，当使用构造函数（`F`）构造一个新对象（`obj`）时，构造函数的 `prototype` 属性（`F.prototype`），将成为新对象的原型对象（`obj.`[[Prototype]]）。
 
-`F.prototype` 不是 `F` 的原型对象。`F.prototype` 通常情况下时 `new F(...)` 的原型对象。
+`F.prototype` 不是 `F` 的原型对象。`F.prototype` 通常情况下是 `new F(...)` 的原型对象。
 
 ## `instanceof`
 
-`obj instanceof F` 检查 `obj` 是否是 `F` 的实例。它检查的并非 `F` 是否在 `obj` 的原型链上。这一检查要求 `F` 是一个构造函数，并检查 `F.prototype` 是否在 `obj` 的原型链上。
+`obj instanceof F` 检查 `obj` 是否是 `F` 的实例。它并非检查 `F` 是否在 `obj` 的原型链上。这一检查要求 `F` 是一个构造函数，并检查 `F.prototype` 是否在 `obj` 的原型链上。
 
 [InstanceOfOperator(*V*, *target*)](https://www.ecma-international.org/ecma-262/#sec-instanceofoperator) ：
 > The abstract operation InstanceofOperator(*V*, *target*) implements the generic algorithm for determining if ECMAScript value *V* is an instance of object *target* either by consulting *target*'s @@hasinstance method or, if absent, determining whether the value of *target*'s `prototype` property is present in *V*'s prototype chain.
 
-通常所说 `obj` 是 `F` 类型的对象，指的也是 `F.prototype` 在 `obj` 的原型链上。
+通常所说的 `obj` 是 `F` 类型的对象，指的也是 `F.prototype` 在 `obj` 的原型链上。
