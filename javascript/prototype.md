@@ -55,4 +55,18 @@ Object 对象的 [getPrototypeOf](https://www.ecma-international.org/ecma-262/#s
 [InstanceOfOperator(*V*, *target*)](https://www.ecma-international.org/ecma-262/#sec-instanceofoperator) ：
 > The abstract operation InstanceofOperator(*V*, *target*) implements the generic algorithm for determining if ECMAScript value *V* is an instance of object *target* either by consulting *target*'s @@hasinstance method or, if absent, determining whether the value of *target*'s `prototype` property is present in *V*'s prototype chain.
 
-通常所说的 `obj` 是 `F` 类型的对象，指的也是 `F.prototype` 在 `obj` 的原型链上。
+
+通常所说 `obj` 是 `F` 类型的对象，指的也是 `F.prototype` 在 `obj` 的原型链上。
+
+## 常见“构造”函数的 `prototype`
+
+| 函数 | `prototype` |
+|---|----|
+| 普通函数 | `Object()` |
+| `class C` | `Object()` |
+| `class C extends null` | `Object.create(null)` |
+| `class C extends B` | `Object.create(B.prototype)` |
+
+箭头函数与成员函数不能构造，没有 `prototype` 属性。
+
+普通函数的 `prototype` 属性是可写的，`class` 的 `prototype` 属性是不可写的。
