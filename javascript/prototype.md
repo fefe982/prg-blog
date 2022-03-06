@@ -2,7 +2,7 @@
 
 这里不介绍原型链。
 
-javascript 中有若干长得跟 "prototype" / "proto" 很想的属性/函数，这里简单总结一下他们都是啥，哪个是原型对象，哪个不是。
+javascript 中有若干长得跟 “prototype” / “proto” 很像的属性/函数，这里简单总结一下他们都是啥，哪个是原型对象，哪个不是。
 
 ## [[Prototype]]
 
@@ -46,7 +46,7 @@ Object 对象的 [getPrototypeOf](https://www.ecma-international.org/ecma-262/#s
 
 通常情况下，当使用构造函数（`F`）构造一个新对象（`obj`）时，构造函数的 `prototype` 属性（`F.prototype`），将成为新对象的原型对象（`obj.`[[Prototype]]）。
 
-`F.prototype` 不是 `F` 的原型对象。`F.prototype` 通常情况下是 `new F(...)` 的原型对象。
+`F.prototype` 不是 `F` 的原型对象。`F.prototype` 通常情况下是 `new F(...)` 结果的原型对象。
 
 ## `instanceof`
 
@@ -55,17 +55,16 @@ Object 对象的 [getPrototypeOf](https://www.ecma-international.org/ecma-262/#s
 [InstanceOfOperator(*V*, *target*)](https://www.ecma-international.org/ecma-262/#sec-instanceofoperator) ：
 > The abstract operation InstanceofOperator(*V*, *target*) implements the generic algorithm for determining if ECMAScript value *V* is an instance of object *target* either by consulting *target*'s @@hasinstance method or, if absent, determining whether the value of *target*'s `prototype` property is present in *V*'s prototype chain.
 
-
-通常所说 `obj` 是 `F` 类型的对象，指的也是 `F.prototype` 在 `obj` 的原型链上。
+通常所说的 `obj` 是 `F` 类型的对象，指的也是 `F.prototype` 在 `obj` 的原型链上。
 
 ## 常见“构造”函数的 `prototype`
 
 | 函数 | `prototype` |
 |---|----|
 | 普通函数 | `Object()` |
-| `class C` | `Object()` |
-| `class C extends null` | `Object.create(null)` |
-| `class C extends B` | `Object.create(B.prototype)` |
+| `class C` | `Object()` 并增加类中定义的属性、方法 |
+| `class C extends null` | `Object.create(null)` 并增加类中定义的属性、方法 |
+| `class C extends B` | `Object.create(B.prototype)` 并增加类中定义的属性、方法 |
 
 箭头函数与成员函数不能构造，没有 `prototype` 属性。
 
