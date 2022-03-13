@@ -8,7 +8,7 @@
 
 > A bit more history: `var` hoisting was an implementation artifact. `function` hoisting was better motivated: <https://twitter.com/BrendanEich/status/33403701100154880>.
 
-函数的提升使用明确的理由的。但是变量的提升，只是再实现的“顺便”提升了。
+函数的提升是有明确的理由的。但是变量的提升，只是在实现中“顺便”提升了。
 
 那么函数为什么要提升呢？[他也给出了理由](https://twitter.com/BrendanEich/status/33403701100154880)：
 
