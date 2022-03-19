@@ -2,29 +2,30 @@
 
 Javascript `this` 的绑定是一个老大难问题。这里顺着标准捋一下 `this` 的问题。
 
+注：标准在不断更新，以下引用与最新标准在语言上可能有所不同。
+
 ## 获取 `this` 绑定的对象
 
 解决 `this` 绑定的问题，首先要看一下，当程序里出现 `this` 的时候，到底是如何获取它绑定的对象的呢？
 
-标准里，通过一个叫做 [ResolveThisBinding](https://www.ecma-international.org/ecma-262/#sec-resolvethisbinding) 的内置方法获取 `this` 的绑定，这个方法本身很简单：
+标准里，通过一个叫做 [ResolveThisBinding](https://262.ecma-international.org/#sec-resolvethisbinding) 的内置方法获取 `this` 的绑定，这个方法本身很简单：
 
 > 1. Let *envRec* be GetThisEnvironment().
 > 2. Return ? *envRec*.GetThisBinding().
 
-首先通过 [GetThisEnvironment](https://www.ecma-international.org/ecma-262/#sec-getthisenvironment) 拿到保存了 `this` 的环境，然后通过这个环境的 GetThisBinding 内置方法得到 `this`。
+首先通过 [GetThisEnvironment](https://262.ecma-international.org/#sec-getthisenvironment) 拿到保存了 `this` 的环境，然后通过这个环境的 GetThisBinding 内置方法得到 `this`。
 
 ### GetThisEnvironment
 
 GetThisEnvironment 就是从当前的环境开始，一级一级向外找，直到找到一个由 `this` 的环境为止：
 
-> 1. Let lex be the running execution context's LexicalEnvironment.
+> 1. Let *env* be the running execution context's LexicalEnvironment.
 > 2. Repeat,
->    1. Let envRec be lex's EnvironmentRecord.
->    1. Let exists be envRec.HasThisBinding().
->    1. If exists is true, return envRec.
->    1. Let outer be the value of lex's outer environment reference.
->    1. Assert: outer is not null.
->    1. Set lex to outer.
+>    1. Let *exists* be *envRec*.HasThisBinding().
+>    1. If *exists* is **true**, return *env*.
+>    1. Let *outer* be the value of *env*.[[OuterEnv]].
+>    1. Assert: *outer* is not **null**.
+>    1. Set *env* to *outer*.
 
 什么样的环境有 `this` 呢？其实，只有 Function 跟 Global 环境才有 `this` 记录，其他环境，如块（Block），是没有的。
 
@@ -36,16 +37,15 @@ GetThisEnvironment 就是从当前的环境开始，一级一级向外找，直�
 
 #### 全局
 
-[全局环境](https://www.ecma-international.org/ecma-262/#sec-global-environment-records-getthisbinding)比较简单，它直接返回了一个 [[GlobalThisValue]] 的槽（可以认为是内置属性）：
+[全局环境](https://262.ecma-international.org/#sec-global-environment-records-getthisbinding)比较简单，它直接返回了一个 [[GlobalThisValue]] 的槽（可以认为是内置属性）：
 
-> 1. Let *envRec* be the global Environment Record for which the method was invoked.
-> 1. Return *envRec*.[[GlobalThisValue]].
+> 1. Return *env*.[[GlobalThisValue]].
 
-这个 [[GlobalThisValue]] 又是啥呢？其实这个是由实现决定的。在很多实现里，它就是全局对象。
+这个 [[GlobalThisValue]] 又是啥呢？其实这个是由实现决定的。在很多实现里，它就是全局对象（比如浏览器里的 window）。
 
 #### Module 全局
 
-在 [Module 的全局环境](https://www.ecma-international.org/ecma-262/#sec-module-environment-records-getthisbinding) 就更简单了：
+在 [Module 的全局环境](https://262.ecma-international.org/#sec-module-environment-records-getthisbinding) 就更简单了：
 
 > 1. Return **undefined**.
 
@@ -53,16 +53,15 @@ GetThisEnvironment 就是从当前的环境开始，一级一级向外找，直�
 
 #### 函数
 
-[函数环境](https://www.ecma-international.org/ecma-262/#sec-function-environment-records-getthisbinding)就略微复杂一些：
+[函数环境](https://262.ecma-international.org/#sec-function-environment-records-getthisbinding)就略微复杂一些：
 
-> 1. Let *envRec* be the function Environment Record for which the method was invoked.
 > 1. Assert: *envRec*.[[ThisBindingStatus]] is not **"lexical"**.
 > 1. If *envRec*.[[ThisBindingStatus]] is **"uninitialized"**, throw a **ReferenceError** exception.
 > 1. Return *envRec*.[[ThisValue]].
 
-其中第二步，[[ThisBindingStatus]] 不为 "lexical" 实际是说这不能是一个箭头函数（箭头函数没有 `this` 绑定。
+其中，检测[[ThisBindingStatus]] 不为 "lexical" 实际是说这不能是一个箭头函数（箭头函数没有 `this` 绑定。
 
-第三部检测如果 `this` 绑定没有被初始化过，那么抛出异常。啥时候初始化的，以后再说。
+第二部检测如果 `this` 绑定没有被初始化过，那么抛出异常。啥时候初始化的，以后再说（比如，在派生类构造函数里，调用`super(...)`之前）。
 
 所有检测都通过了，那么可以返回环境里记录 `this` 绑定了。
 
@@ -71,13 +70,13 @@ GetThisEnvironment 就是从当前的环境开始，一级一级向外找，直�
 ## 普通函数调用
 
 除了箭头函数之外，其他函数里的 `this` 是啥，就看环境里的 `this` 绑定到了哪里。
-函数环境的 `this` 是通过 [BindThisValue](https://www.ecma-international.org/ecma-262/#sec-bindthisvalue) 来绑定的。
+函数环境的 `this` 是通过 [BindThisValue](https://262.ecma-international.org/#sec-bindthisvalue) 来绑定的。
 
 ### OrdinaryCallBindThis(F, CalleeContext, thisArgument)
 
-通观标准，只用两个地方引用了这个方法，一个是 [OrdinaryCallBindThis](https://www.ecma-international.org/ecma-262/#sec-bindthisvalue) ，另一个是 `super` 。`super` 用于构造的，我们一会再看。这里先看一下 OrdinaryCallBindThis(F, calleeContext, thisArgument):
+通观标准，只用两个地方引用了这个方法，一个是 [OrdinaryCallBindThis](https://262.ecma-international.org/#sec-bindthisvalue) ，另一个是 `super` 。`super` 用于构造的，我们一会再看。这里先看一下 OrdinaryCallBindThis(F, calleeContext, thisArgument):
 
-> 1. Let *thisMode* be F.[[ThisMode]].
+> 1. Let *thisMode* be *F*.[[ThisMode]].
 > 1. If *thisMode* is **lexical**, return NormalCompletion(`undefined`).
 > 1. Let *calleeRealm* be F.[[Realm]].
 > 1. Let *localEnv* be the LexicalEnvironment of *calleeContext*.
@@ -85,16 +84,14 @@ GetThisEnvironment 就是从当前的环境开始，一级一级向外找，直�
 > 1. Else,
 >    1. If thisArgument is `undefined` or `null`, then
 >       1. Let *globalEnv* be *calleeRealm*.[[GlobalEnv]].
->       1. Let *globalEnvRec* be *globalEnv*'s EnvironmentRecord.
->       1. Assert: *globalEnvRec* is a global Environment Record.
->       1. Let thisValue be *globalEnvRec*.[[GlobalThisValue]].
+>       1. Assert: *globalEnv* is a global Environment Record.
+>       1. Let thisValue be *globalEnv*.[[GlobalThisValue]].
 >    1. Else,
 >       1. Let *thisValue* be ! ToObject(*thisArgument*).
 >       1. NOTE: ToObject produces wrapper objects using *calleeRealm*.
-> 1. Let *envRec* be *localEnv*'s EnvironmentRecord.
-> 1. Assert: *envRec* is a function Environment Record.
-> 1. Assert: The next step never returns an abrupt completion because *envRec*.[ [ThisBindingStatus]] is not **"initialized"**.
-> 1. Return *envRec*.BindThisValue(*thisValue*).
+> 1. Assert: *localEnv* is a function Environment Record.
+> 1. Assert: The next step never returns an abrupt completion because *localEnv*.[ [ThisBindingStatus]] is not **"initialized"**.
+> 1. Return *localEnv*.BindThisValue(*thisValue*).
 
 这里 F 是被调用的函数，thisArgument 是待绑定的 `this` 值。
 
@@ -107,28 +104,28 @@ GetThisEnvironment 就是从当前的环境开始，一级一级向外找，直�
 
 ### [[Call]](thisArgument, arumentsList)
 
-使用 OrdinaryBindThis 的，是普通函数对象的 [[Call]] 方法和 [[Construct]] 方法。[[Construct]] 方法用于构造，一会再看。[[[Call]](thisArgument, argumentsList)](https://www.ecma-international.org/ecma-262/#sec-ecmascript-function-objects-call-thisargument-argumentslist) 则是无条件的将传入的 thisArgument 转给了 OrdinaryBindThis 。
+使用 OrdinaryBindThis 的，是普通函数对象的 [[Call]] 方法和 [[Construct]] 方法。[[Construct]] 方法用于构造，一会再看。[[[Call]](thisArgument, argumentsList)](https://262.ecma-international.org/#sec-ecmascript-function-objects-call-thisargument-argumentslist) 则是无条件的将传入的 thisArgument 转给了 OrdinaryBindThis 。
 
 ### Call(F, V, argumentsList)
 
-调用对象的 [[Call]] 方法的，是内置方法 [Call(F, V, argumentList)](https://www.ecma-international.org/ecma-262/#sec-call) 。它直接使用了 F.[[Call]](V, argumentList) 。
+调用对象的 [[Call]] 方法的，是内置方法 [Call(F, V, argumentList)](https://262.ecma-international.org/#sec-call) 。它直接使用了 F.[[Call]](V, argumentList) 。
 
 ### EvaluateCall(func, ref, arguments, tailPosition)
 
-在函数调用的过程中，使用 [EvaluateCall](https://www.ecma-international.org/ecma-262/#sec-evaluatecall) 方法，其中调用了 Call。
+在函数调用的过程中，使用 [EvaluateCall](https://262.ecma-international.org/#sec-evaluatecall) 方法，其中调用了 Call。
 
-> 1. If Type(*ref*) is Reference, then
+> 1. If *ref* is a Reference Record, then
 >    1. If IsPropertyReference(*ref*) is **true**, then
 >       1. Let *thisValue* be GetThisValue(*ref*).
->    1. Else the base of *ref* is an Environment Record,
->       1. Let *refEnv* be GetBase(*ref*).
+>    1. Else,
+>       1. Let *refEnv* be *ref*.[[Base]].
+>       1. Assert *refEnv* is an Environment Record.
 >       1. Let *thisValue* be *refEnv*.WithBaseObject().
-> 1. Else Type(*ref*) is not Reference,
+> 1. Else,
 >    1. Let *thisValue* be `undefined`.
-> 1. Let *argList* be ArgumentListEvaluation of *arguments*.
-> 1. ReturnIfAbrupt(*argList*).
-> 1. If Type(*func*) is not Object, throw a TypeError exception.
-> 1. If IsCallable(*func*) is **false**, throw a TypeError exception.
+> 1. Let *argList* be ? ArgumentListEvaluation of *arguments*.
+> 1. If Type(*func*) is not Object, throw a **TypeError** exception.
+> 1. If IsCallable(*func*) is **false**, throw a **TypeError** exception.
 > 1. If *tailPosition* is **true**, perform PrepareForTailCall().
 > 1. Let *result* be Call(*func*, *thisValue*, *argList*).
 > 1. Assert: If *tailPosition* is **true**, the above call will not return here, but instead evaluation will continue as if the following return has already occurred.
@@ -149,13 +146,13 @@ GetThisEnvironment 就是从当前的环境开始，一级一级向外找，直�
 
 #### Reference
 
-[Reference](https://www.ecma-international.org/ecma-262/#sec-reference-specification-type) 是一种标准内置类型。它用来表示标识符解析的结果，也就是说，在什么地方找到了某一个标识符。
+[Reference](https://262.ecma-international.org/#sec-reference-specification-type) 是一种标准内置类型。它用来表示标识符解析的结果，也就是说，在什么地方找到了某一个标识符。
 
 它一般记录了以下几个信息：
 
 1. base value: 这个标识符是在哪里找到的。它可以一个 Object, 基本类型的值，或者是一个环境（Environment Record），或者是 `undefined`
-   1. 对于对象属性，base value 将是包含这个标识符的对象。对象属性访问的形式（[Property Access](https://www.ecma-international.org/ecma-262/#sec-property-accessors)，如 `A.B`， `A["B"]`，以及 `super.Property`）的结果都会是一个Reference，其中 base value 将是其中相当于对象的部分的值。(注意不会检查对象中是否真的存在这个属性)
-   2. 对于变量/常量，如局部变量，全局变量，函数参数等，或者说一个单独的 [Identifier](https://www.ecma-international.org/ecma-262/#sec-identifiers)，求值的结果是一个 Reference ，其中的 base value 将是包含这个变量的环境。查找会从标识符出现的环境开始，一层层向上找，直到全局环境。
+   1. 对于对象属性，base value 将是包含这个标识符的对象。对象属性访问的形式（[Property Access](https://262.ecma-international.org/#sec-property-accessors)，如 `A.B`， `A["B"]`，以及 `super.Property`）的结果都会是一个Reference，其中 base value 将是其中相当于对象的部分的值。(注意不会检查对象中是否真的存在这个属性)
+   2. 对于变量/常量，如局部变量，全局变量，函数参数等，或者说一个单独的 [Identifier](https://262.ecma-international.org/#sec-identifiers)，求值的结果是一个 Reference ，其中的 base value 将是包含这个变量的环境。查找会从标识符出现的环境开始，一层层向上找，直到全局环境。
    3. 变量没有找到的时候，base value 为 `undefined`。（只有单独的 Identifier 没有找到时会有此结果）
 2. referenced name: 这是一个字符串。表示标识符的名字。
 3. strict: 引用标识符的地点是否处于严格模式
@@ -164,7 +161,7 @@ GetThisEnvironment 就是从当前的环境开始，一级一级向外找，直�
 
 Property Access、super.Property 和 Identifier 的求值结果是 Reference 。`(Expr)` 的求值结果与 `Expr` 一致。其它所有表达式的求值结果都不是 Reference 。
 
-EvalueteCall 中用的 [GetThisValue](https://www.ecma-international.org/ecma-262/#sec-getthisvalue) ，会返回 Reference 中记载的 thisValue （如果存在），或者 base value ：
+EvalueteCall 中用的 [GetThisValue](https://262.ecma-international.org/#sec-getthisvalue) ，会返回 Reference 中记载的 thisValue （如果存在），或者 base value ：
 
 > 1. Assert: IsPropertyReference(V) is true.
 > 1. If IsSuperReference(V) is true, then
@@ -211,6 +208,22 @@ EvaluateCall 中的 *ref* 是对函数调用里函数部分的求值结果。
 
 ECMA-262 中规定的很多内置函数会又回调函数，比如 `forEach` 。这些回调函数通常会通过 Call 指定 thisValue 为 `undefined` 调用（同样，对箭头函数不生效）。个别函数（比如 `forEach`）可以调用时通过参数指定调用回调时的 thisValue。
 
+## 类属性
+
+最新的标准（现在还是 draft）允许在类里定义属性，而且属性可以有默认值，这个默认值可以是一个函数。当这个默认值是一个箭头函数时，其中 `this` 是啥就有些微妙了。比如这样：
+
+```javascript
+class A {
+   a = () => {console.log(this.b)}
+}
+```
+
+这个 `this` 是啥呢？
+
+说来话长，现在也还是 draft 状态，就不引用了。简单总结以下：
+
+箭头函数不是直接在类定义里定义的。类里所有的 ` a = b ` 的是带有默认值的属性，默认值部分都会被改写成一个类似于 `function(){ return b }` 的函数。上面的箭头函数也是一样： `function(){ return ()=>{console.log(this.b)}}`。所以，其中的 `this` ，是这个被改写的函数的 `this` 。当这个函数会在构造的过程中被调用，其 `this` 就是构造函数中的 `this` ，通常就是被构造的对象。
+
 ## `bind`
 
 `bind` 会生成一个新的函数对象。这个新的函数对象在生成时记录了调用原函数对象时需要使用的 thisValue 。
@@ -223,11 +236,11 @@ Javascript 中，使用 `new Func()` 的方式调用构造函数，会使用构�
 
 ### [[Construct]](argumentList, newTarget)
 
-与 [[Call]] 不同，[[[Construct]](argumentList, newTarget)](https://www.ecma-international.org/ecma-262/#sec-ecmascript-function-objects-construct-argumentslist-newtarget) 并没有一个参数指明 thisValue 。
+与 [[Call]] 不同，[[[Construct]](argumentList, newTarget)](https://262.ecma-international.org/#sec-ecmascript-function-objects-construct-argumentslist-newtarget) 并没有一个参数指明 thisValue 。
 
 `newTarget` 是 `new Func()` 表达式中被调用的构造函数 ，也就是 `Func` 。需要注意的是，即使 `Func` 是一个类（使用 `class` 定义的），并且有基类（在定义时有 `extends Base`），那么在 `Func` 中会使用 `super(...)` 来构造基类，此时会执行基类的构造（Base），但在执行基类的构造时， NewTarget 依然为 `Func` 。也就是说，NewTarget 永远指向 new 表达式中的那个构造函数。
 
-[[[Construct]](argumentList, newTarget)](https://www.ecma-international.org/ecma-262/#sec-ecmascript-function-objects-construct-argumentslist-newtarget) 的执行过程如下（*F* 时构造函数对象）：
+[[[Construct]](argumentList, newTarget)](https://262.ecma-international.org/#sec-ecmascript-function-objects-construct-argumentslist-newtarget) 的执行过程如下（*F* 时构造函数对象）：
 
 > 1. Assert: *F* is an ECMAScript function object.
 > 1. Assert: Type(*newTarget*) is Object.
@@ -263,7 +276,7 @@ Javascript 中，使用 `new Func()` 的方式调用构造函数，会使用构�
 
 ### `super(...)`
 
-那么派生类构造函数的 `this` 又是哪里来的呢？是通过 [superCall](https://www.ecma-international.org/ecma-262/#sec-super-keyword-runtime-semantics-evaluation) （`super(...)`）调用基类的构造函数生成的：
+那么派生类构造函数的 `this` 又是哪里来的呢？是通过 [superCall](https://262.ecma-international.org/#sec-super-keyword-runtime-semantics-evaluation) （`super(...)`）调用基类的构造函数生成的：
 
 > 1. Let *newTarget* be GetNewTarget().
 > 1. Assert: Type(*newTarget*) is Object.
